@@ -4,11 +4,14 @@ import { Search, MapPin, Filter, Star } from 'lucide-react';
 import { useTukangs } from '../hooks/useTukangs';
 
 const SKILL_OPTIONS = [
-  'Plumbing',
-  'Electrical',
-  'Carpentry',
-  'Painting',
-  'Masonry',
+  'Listrik',
+  'Pipa Air',
+  'Kayu',
+  'Cat',
+  'Bangunan',
+  'AC',
+  'Elektronik',
+  'Taman',
 ];
 
 const TukangList = () => {
@@ -41,7 +44,7 @@ const TukangList = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by location..."
+              placeholder="Cari berdasarkan lokasi..."
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -52,14 +55,14 @@ const TukangList = () => {
             className="flex items-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
           >
             <Filter className="w-5 h-5" />
-            <span>Filters</span>
+            <span>Filter</span>
           </button>
         </div>
 
         {showFilters && (
           <div className="p-4 bg-gray-50 rounded-lg space-y-4">
             <div>
-              <h3 className="font-medium mb-2">Skills</h3>
+              <h3 className="font-medium mb-2">Keahlian</h3>
               <div className="flex flex-wrap gap-2">
                 {SKILL_OPTIONS.map((skill) => (
                   <button
@@ -77,11 +80,11 @@ const TukangList = () => {
               </div>
             </div>
             <div>
-              <h3 className="font-medium mb-2">Price Range (Rp)</h3>
+              <h3 className="font-medium mb-2">Kisaran Harga (Rp)</h3>
               <div className="grid grid-cols-2 gap-4">
                 <input
                   type="number"
-                  placeholder="Min"
+                  placeholder="Minimum"
                   value={priceRange.min || ''}
                   onChange={(e) => setPriceRange(prev => ({
                     ...prev,
@@ -91,7 +94,7 @@ const TukangList = () => {
                 />
                 <input
                   type="number"
-                  placeholder="Max"
+                  placeholder="Maksimum"
                   value={priceRange.max || ''}
                   onChange={(e) => setPriceRange(prev => ({
                     ...prev,
@@ -109,7 +112,7 @@ const TukangList = () => {
       {loading && (
         <div className="text-center py-8">
           <div className="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading tukangs...</p>
+          <p className="mt-2 text-gray-600">Mencari tukang...</p>
         </div>
       )}
 
@@ -145,7 +148,7 @@ const TukangList = () => {
                   <span>{tukang.location}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">{tukang.jobs_completed}+ jobs completed</span>
+                  <span className="text-gray-600">{tukang.jobs_completed}+ pekerjaan selesai</span>
                   <span className="font-semibold">
                     Rp {tukang.min_price.toLocaleString()} - {tukang.max_price.toLocaleString()}
                   </span>
@@ -154,7 +157,7 @@ const TukangList = () => {
                   to={`/tukang/${tukang.id}`}
                   className="block w-full py-2 text-center bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                 >
-                  View Profile
+                  Lihat Profil
                 </Link>
               </div>
             </div>
@@ -162,7 +165,7 @@ const TukangList = () => {
 
           {tukangs.length === 0 && (
             <div className="col-span-full text-center py-8 text-gray-600">
-              <p>No tukangs found matching your criteria.</p>
+              <p>Tidak ada tukang yang sesuai dengan kriteria pencarian.</p>
             </div>
           )}
         </div>
