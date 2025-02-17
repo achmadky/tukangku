@@ -32,6 +32,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Create or update profile when user signs in
+      if (session?.user) {
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: session.user.id,
+            email: session.user.email,
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'id'
+          });
+
+        if (error) {
+          console.error('Error updating profile:', error);
+        }
+      }
     });
 
     return () => subscription.unsubscribe();
