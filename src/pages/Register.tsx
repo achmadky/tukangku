@@ -26,12 +26,10 @@ const Register = () => {
       if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
         
-        // Validate file type
         if (!file.type.startsWith('image/')) {
           throw new Error('Please upload an image file');
         }
         
-        // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
           throw new Error('File size must be less than 5MB');
         }
@@ -56,7 +54,6 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Upload avatar if selected
       let avatarUrl = null;
       if (avatar) {
         const fileExt = avatar.name.split('.').pop();
@@ -78,8 +75,7 @@ const Register = () => {
         avatarUrl = publicUrl;
       }
 
-      // Register tukang
-      const { success, error } = await registerTukang({
+      await supabase.from('tukangs').insert({
         full_name: formData.fullName,
         avatar_url: avatarUrl,
         skills: [formData.skills],
@@ -89,8 +85,6 @@ const Register = () => {
         whatsapp: formData.whatsapp,
         about: formData.about
       });
-
-      if (!success) throw new Error(error);
 
       navigate('/tukangs');
     } catch (error) {
