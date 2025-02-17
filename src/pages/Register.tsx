@@ -20,18 +20,37 @@ const Register = () => {
   });
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [uploadError, setUploadError] = useState<string>('');
 
   useEffect(() => {
     if (!user) {
-      navigate('/');
+      navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAvatar(file);
-      setAvatarPreview(URL.createObjectURL(file));
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploadError('');
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error('Please upload an image file');
+        }
+        
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error('File size must be less than 5MB');
+        }
+
+        setAvatar(file);
+        setAvatarPreview(URL.createObjectURL(file));
+      }
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Error uploading file');
+      setAvatar(null);
+      setAvatarPreview('');
     }
   };
 
@@ -45,18 +64,29 @@ const Register = () => {
 
     try {
       setLoading(true);
+      setUploadError('');
 
       // Upload avatar if selected
       let avatarUrl = null;
       if (avatar) {
         const fileExt = avatar.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        
         const { error: uploadError, data } = await supabase.storage
           .from('avatars')
-          .upload(fileName, avatar);
+          .upload(fileName, avatar, {
+            cacheControl: '3600',
+            upsert: true
+          });
 
         if (uploadError) throw uploadError;
-        avatarUrl = data.path;
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+          
+        avatarUrl = publicUrl;
       }
 
       // Update profile
@@ -76,7 +106,7 @@ const Register = () => {
         .from('tukangs')
         .insert({
           profile_id: user.id,
-          skills: formData.skills.split(',').map(skill => skill.trim()),
+          skills: [formData.skills], // Store as a single skill/description
           location: formData.location,
           min_price: parseInt(formData.minPrice),
           max_price: parseInt(formData.maxPrice),
@@ -89,7 +119,7 @@ const Register = () => {
       navigate('/tukangs');
     } catch (error) {
       console.error('Error:', error);
-      alert('Terjadi kesalahan saat mendaftar. Silakan coba lagi.');
+      setUploadError(error instanceof Error ? error.message : 'Terjadi kesalahan saat mendaftar');
     } finally {
       setLoading(false);
     }
@@ -134,6 +164,9 @@ const Register = () => {
                 />
               </label>
             </div>
+            {uploadError && (
+              <p className="text-red-500 text-sm text-center">{uploadError}</p>
+            )}
           </div>
 
           {/* Basic Info */}
@@ -194,7 +227,7 @@ const Register = () => {
                 onChange={(e) => setFormData(prev => ({ ...prev, skills: e.target.value }))}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 rows={4}
-                placeholder="Contoh: Tukang listrik berpengalaman 5 tahun, ahli dalam instalasi listrik rumah, perbaikan MCB, pemasangan lampu, dll."
+                placeholder="Jelaskan keahlian dan pengalaman Anda sebagai tukang..."
                 required
               />
             </div>
