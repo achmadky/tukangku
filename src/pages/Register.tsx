@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import PlacesAutocomplete from '../components/PlacesAutocomplete';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { registerTukang } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
