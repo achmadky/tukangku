@@ -1,96 +1,36 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import React, { createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
+  registerTukang: (data: any) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for changes on auth state
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-
-      // Create or update profile when user signs in
-      if (session?.user) {
-        const { error } = await supabase
-          .from('profiles')
-          .upsert({
-            id: session.user.id,
-            email: session.user.email,
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'id'
-          });
-
-        if (error) {
-          console.error('Error updating profile:', error);
-        }
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signInWithGoogle = async () => {
+  const registerTukang = async (data: any) => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + '/auth/callback',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
+      const { error } = await supabase
+        .from('tukangs')
+        .insert({
+          profile_id: crypto.randomUUID(), // Generate a random UUID for profile_id
+          ...data
+        });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
+      return { success: true };
     } catch (error) {
-      console.error('Error signing in with Google:', error);
-      alert('Gagal masuk dengan Google. Silakan coba lagi.');
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error signing out:', error);
-      alert('Gagal keluar. Silakan coba lagi.');
+      console.error('Error registering tukang:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to register' 
+      };
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signInWithGoogle, signOut }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ registerTukang }}>
+      {children}
     </AuthContext.Provider>
   );
 }

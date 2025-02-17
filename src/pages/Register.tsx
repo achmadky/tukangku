@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import PlacesAutocomplete from '../components/PlacesAutocomplete';
 
 const Register = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { registerTukang } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -20,17 +20,11 @@ const Register = () => {
   });
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
-  const [uploadError, setUploadError] = useState<string>('');
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/', { replace: true });
-    }
-  }, [user, navigate]);
+  const [error, setError] = useState<string>('');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      setUploadError('');
+      setError('');
       if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
         
@@ -48,7 +42,7 @@ const Register = () => {
         setAvatarPreview(URL.createObjectURL(file));
       }
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Error uploading file');
+      setError(error instanceof Error ? error.message : 'Error uploading file');
       setAvatar(null);
       setAvatarPreview('');
     }
@@ -60,17 +54,15 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    setError('');
+    setLoading(true);
 
     try {
-      setLoading(true);
-      setUploadError('');
-
       // Upload avatar if selected
       let avatarUrl = null;
       if (avatar) {
         const fileExt = avatar.name.split('.').pop();
-        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
         
         const { error: uploadError, data } = await supabase.storage
           .from('avatars')
@@ -81,7 +73,6 @@ const Register = () => {
 
         if (uploadError) throw uploadError;
         
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
           .getPublicUrl(fileName);
@@ -89,45 +80,27 @@ const Register = () => {
         avatarUrl = publicUrl;
       }
 
-      // Update profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          full_name: formData.fullName,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString()
-        });
+      // Register tukang
+      const { success, error } = await registerTukang({
+        full_name: formData.fullName,
+        avatar_url: avatarUrl,
+        skills: [formData.skills],
+        location: formData.location,
+        min_price: parseInt(formData.minPrice),
+        max_price: parseInt(formData.maxPrice),
+        whatsapp: formData.whatsapp,
+        about: formData.about
+      });
 
-      if (profileError) throw profileError;
-
-      // Create tukang profile
-      const { error: tukangError } = await supabase
-        .from('tukangs')
-        .insert({
-          profile_id: user.id,
-          skills: [formData.skills], // Store as a single skill/description
-          location: formData.location,
-          min_price: parseInt(formData.minPrice),
-          max_price: parseInt(formData.maxPrice),
-          whatsapp: formData.whatsapp,
-          about: formData.about
-        });
-
-      if (tukangError) throw tukangError;
+      if (!success) throw new Error(error);
 
       navigate('/tukangs');
     } catch (error) {
-      console.error('Error:', error);
-      setUploadError(error instanceof Error ? error.message : 'Terjadi kesalahan saat mendaftar');
+      setError(error instanceof Error ? error.message : 'Failed to register');
     } finally {
       setLoading(false);
     }
   };
-
-  if (!user) {
-    return null;
-  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -164,8 +137,8 @@ const Register = () => {
                 />
               </label>
             </div>
-            {uploadError && (
-              <p className="text-red-500 text-sm text-center">{uploadError}</p>
+            {error && (
+              <p className="text-red-500 text-sm text-center mt-2">{error}</p>
             )}
           </div>
 
