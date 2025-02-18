@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import PlacesAutocomplete from '../components/PlacesAutocomplete';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { registerTukang } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -26,10 +28,12 @@ const Register = () => {
       if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
         
+        // Validate file type
         if (!file.type.startsWith('image/')) {
           throw new Error('Please upload an image file');
         }
         
+        // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
           throw new Error('File size must be less than 5MB');
         }
@@ -54,17 +58,15 @@ const Register = () => {
     setLoading(true);
 
     try {
+      // Upload avatar if selected
       let avatarUrl = null;
       if (avatar) {
         const fileExt = avatar.name.split('.').pop();
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
         
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(fileName, avatar, {
-            cacheControl: '3600',
-            upsert: true
-          });
+          .upload(fileName, avatar);
 
         if (uploadError) throw uploadError;
         
@@ -75,17 +77,19 @@ const Register = () => {
         avatarUrl = publicUrl;
       }
 
-      await supabase.from('tukangs').insert({
+      // Register tukang
+      const { success, error } = await registerTukang({
         full_name: formData.fullName,
         avatar_url: avatarUrl,
-        skills: [formData.skills],
+        skills: formData.skills,
         location: formData.location,
-        min_price: parseInt(formData.minPrice),
-        max_price: parseInt(formData.maxPrice),
+        min_price: formData.minPrice,
+        max_price: formData.maxPrice,
         whatsapp: formData.whatsapp,
         about: formData.about
       });
 
+      if (!success) throw new Error(error);
       navigate('/tukangs');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to register');
@@ -129,12 +133,8 @@ const Register = () => {
                 />
               </label>
             </div>
-            {error && (
-              <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-            )}
           </div>
 
-          {/* Basic Info */}
           <div className="grid grid-cols-1 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -221,6 +221,10 @@ const Register = () => {
               </div>
             </div>
           </div>
+
+          {error && (
+            <div className="text-red-500 text-sm">{error}</div>
+          )}
 
           <button
             type="submit"
