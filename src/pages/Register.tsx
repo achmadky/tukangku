@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import PlacesAutocomplete from '../components/PlacesAutocomplete';
 
 const Register = () => {
@@ -49,33 +48,32 @@ const Register = () => {
     try {
       let avatarUrl = null;
       if (avatar) {
-        const fileExt = avatar.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const { error: uploadError, data } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, avatar, {
-            cacheControl: '3600',
-            contentType: avatar.type,
-            upsert: false
-          });
-        if (uploadError) throw uploadError;
-        avatarUrl = supabase.storage.from('avatars').getPublicUrl(fileName).data.publicUrl;
+        // You can use a simple file hosting service like Cloudinary or ImgBB
+        // For now, we'll skip image upload
+        avatarUrl = 'default-avatar-url';
       }
 
-      const { data, error } = await supabase.from('tukang').insert([
-        {
-          full_name: formData.fullName,
-          avatar_url: avatarUrl,
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          avatarUrl,
           skills: formData.skills,
           location: formData.location,
-          min_price: formData.minPrice,
-          max_price: formData.maxPrice,
+          minPrice: parseInt(formData.minPrice),
+          maxPrice: parseInt(formData.maxPrice),
           whatsapp: formData.whatsapp,
           about: formData.about
-        }
-      ]);
+        }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to register');
+      }
+
       navigate('/tukangs');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to register');
