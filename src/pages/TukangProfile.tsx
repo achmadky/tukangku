@@ -1,42 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { Star, MapPin, Phone, Calendar, Shield } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import tukangData from '../data/tukangData';
+import { getTukangById, TukangData } from '../services/tukangService';
 
 const TukangProfile = () => {
   const { id } = useParams<{ id: string }>();
-  const [tukang, setTukang] = useState<any>(null);
+  const [tukang, setTukang] = useState<TukangData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call with a small delay
-    setLoading(true);
-    setTimeout(() => {
-      // Find the tukang with the matching ID from our mock data
-      const foundTukang = tukangData.find(t => t.id === parseInt(id || '0'));
+    const fetchTukang = async () => {
+      if (!id) return;
       
-      if (foundTukang) {
-        // Convert to the format we need
-        setTukang({
-          id: String(foundTukang.id),
-          profile: {
-            full_name: foundTukang.name,
-            avatar_url: foundTukang.photo
-          },
-          skills: [foundTukang.specialty],
-          location: foundTukang.location,
-          min_price: foundTukang.hourlyRate * 0.8,
-          max_price: foundTukang.hourlyRate * 1.2,
-          rating: foundTukang.rating,
-          jobs_completed: foundTukang.experience * 10,
-          about: "Professional handyman with over " + foundTukang.experience + 
-                " years of experience in " + foundTukang.specialty.toLowerCase() + ". " +
-                "Specialized in residential repairs and maintenance. Known for reliable service and " +
-                "attention to detail. Available for emergency repairs and scheduled maintenance work."
-        });
+      try {
+        setLoading(true);
+        const data = await getTukangById(id);
+        setTukang(data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching tukang:', err);
+        setError('Failed to load tukang details. Please try again later.');
+        setLoading(false);
       }
-      setLoading(false);
-    }, 500);
+    };
+
+    fetchTukang();
   }, [id]);
 
   if (loading) {
@@ -44,6 +33,14 @@ const TukangProfile = () => {
       <div className="text-center py-16">
         <div className="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full mx-auto"></div>
         <p className="mt-4 text-gray-600">Loading profile...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-red-500">{error}</p>
       </div>
     );
   }
@@ -63,38 +60,31 @@ const TukangProfile = () => {
         <div className="md:flex">
           <div className="md:w-1/3">
             <img
-              src={tukang.profile.avatar_url || "https://source.unsplash.com/random/400x400?worker"}
-              alt={`${tukang.profile.full_name} Profile`}
+              src={tukang.photo || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"}
+              alt={`${tukang.fullName} Profile`}
               className="w-full h-full object-cover"
             />
           </div>
           <div className="p-6 md:w-2/3">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-2xl font-bold">{tukang.profile.full_name}</h1>
-                <p className="text-gray-600">{tukang.skills.join(', ')}</p>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span className="text-lg font-semibold">{tukang.rating.toFixed(1)}</span>
-                <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                <span className="text-gray-600">({tukang.jobs_completed} reviews)</span>
+                <h1 className="text-2xl font-bold">{tukang.fullName}</h1>
+                <p className="text-gray-600">{tukang.skills}</p>
               </div>
             </div>
             <div className="mt-4 flex items-center text-gray-600">
               <MapPin className="w-5 h-5 mr-2" />
               <span>{tukang.location}</span>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {tukang.skills.map((skill: string, index: number) => (
-                <span key={index} className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm">
-                  {skill}
-                </span>
-              ))}
-            </div>
             <div className="mt-6">
-              <button className="w-full md:w-auto px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors">
+              <a 
+                href={`https://wa.me/${tukang.whatsapp}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full md:w-auto px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors inline-block text-center"
+              >
                 Contact Now
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -108,7 +98,7 @@ const TukangProfile = () => {
             <h2 className="text-lg font-semibold">Price Range</h2>
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            Rp {tukang.min_price.toLocaleString()} - {tukang.max_price.toLocaleString()}
+            Rp {tukang.minPrice.toLocaleString()} - {tukang.maxPrice.toLocaleString()}
           </p>
           <p className="text-gray-600 text-sm mt-1">Per service</p>
         </div>
@@ -118,7 +108,7 @@ const TukangProfile = () => {
             <Calendar className="w-5 h-5 text-primary-500" />
             <h2 className="text-lg font-semibold">Experience</h2>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{Math.round(tukang.jobs_completed / 10)}+ Years</p>
+          <p className="text-2xl font-bold text-gray-900">{Math.max(1, Math.round((tukang.jobsCompleted || 0) / 10))}+ Years</p>
           <p className="text-gray-600 text-sm mt-1">Professional experience</p>
         </div>
 
@@ -127,7 +117,7 @@ const TukangProfile = () => {
             <Shield className="w-5 h-5 text-primary-500" />
             <h2 className="text-lg font-semibold">Completed Jobs</h2>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{tukang.jobs_completed}+</p>
+          <p className="text-2xl font-bold text-gray-900">{tukang.jobsCompleted || 0}+</p>
           <p className="text-gray-600 text-sm mt-1">Satisfied customers</p>
         </div>
       </div>
