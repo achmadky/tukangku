@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, Filter, Star } from 'lucide-react';
-import { useTukangs } from '../hooks/useTukangs';
+import tukangData from '../data/tukangData';
 
 const SKILL_OPTIONS = [
   'Listrik',
@@ -14,18 +14,87 @@ const SKILL_OPTIONS = [
   'Taman',
 ];
 
+// Convert mock data to match the expected Tukang interface
+const convertMockData = () => {
+  return tukangData.map(tukang => ({
+    id: String(tukang.id),
+    profile_id: String(tukang.id),
+    skills: [tukang.specialty],
+    location: tukang.location,
+    min_price: tukang.hourlyRate * 0.8,
+    max_price: tukang.hourlyRate * 1.2,
+    whatsapp: tukang.phone,
+    about: null,
+    rating: tukang.rating,
+    jobs_completed: tukang.experience * 10,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    profile: {
+      id: String(tukang.id),
+      email: `${tukang.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+      full_name: tukang.name,
+      avatar_url: tukang.photo, // Use the direct URL from the mock data
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  }));
+};
+
 const TukangList = () => {
   const [location, setLocation] = useState('');
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [priceRange, setPriceRange] = useState<{ min?: number; max?: number }>({});
+  const [tukangs, setTukangs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { tukangs, loading, error } = useTukangs({
-    location,
-    skills: selectedSkills,
-    minPrice: priceRange.min,
-    maxPrice: priceRange.max,
-  });
+  useEffect(() => {
+    // Simulate loading
+    setLoading(true);
+    
+    setTimeout(() => {
+      try {
+        // Get mock data
+        let filteredTukangs = convertMockData();
+        
+        // Apply filters
+        if (location) {
+          filteredTukangs = filteredTukangs.filter(tukang => 
+            tukang.location.toLowerCase().includes(location.toLowerCase())
+          );
+        }
+        
+        if (selectedSkills.length > 0) {
+          filteredTukangs = filteredTukangs.filter(tukang => 
+            selectedSkills.some(skill => 
+              tukang.skills.some((tukangSkill: string) => 
+                tukangSkill.toLowerCase().includes(skill.toLowerCase())
+              )
+            )
+          );
+        }
+        
+        if (priceRange.min) {
+          filteredTukangs = filteredTukangs.filter(tukang => 
+            tukang.min_price >= (priceRange.min ?? 0)
+          );
+        }
+        
+        if (priceRange.max) {
+          filteredTukangs = filteredTukangs.filter(tukang => 
+            tukang.max_price <= (priceRange.max ?? Infinity)
+          );
+        }
+        
+        setTukangs(filteredTukangs);
+        setLoading(false);
+      } catch (err) {
+        setError('An error occurred while fetching data');
+        setLoading(false);
+      }
+    }, 500); // Simulate network delay
+  }, [location, selectedSkills, priceRange.min, priceRange.max]);
 
   const toggleSkill = (skill: string) => {
     setSelectedSkills(prev =>
