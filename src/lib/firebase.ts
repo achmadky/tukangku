@@ -3,15 +3,14 @@ import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 
 // Your web app's Firebase configuration
-// Replace with your actual Firebase project config from the Firebase console
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "tukangku-4d572.firebaseapp.com",
-  databaseURL: "https://tukangku-4d572-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  projectId: "tukangku-4d572",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "1054846299335",
-  appId: "YOUR_APP_ID"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || process.env.REACT_APP_FIREBASE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || process.env.REACT_APP_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
