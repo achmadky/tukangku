@@ -45,37 +45,22 @@ const Register = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+  
     try {
       let avatarUrl = null;
       if (avatar) {
-        const fileExt = avatar.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const { error: uploadError, data } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, avatar, {
-            cacheControl: '3600',
-            contentType: avatar.type,
-            upsert: false
-          });
-        if (uploadError) throw uploadError;
-        avatarUrl = supabase.storage.from('avatars').getPublicUrl(fileName).data.publicUrl;
+        // Instead of uploading to Supabase, we'll create a local URL
+        avatarUrl = URL.createObjectURL(avatar);
+        // Note: In a real app without Supabase, you'd need to implement file upload differently
       }
-
-      const { data, error } = await supabase.from('tukang').insert([
-        {
-          full_name: formData.fullName,
-          avatar_url: avatarUrl,
-          skills: formData.skills,
-          location: formData.location,
-          min_price: formData.minPrice,
-          max_price: formData.maxPrice,
-          whatsapp: formData.whatsapp,
-          about: formData.about
-        }
-      ]);
-
-      if (error) throw error;
+  
+      // Use the AuthContext to register the tukang
+      const { success, error: registerError } = await registerTukang({
+        ...formData,
+        avatar_url: avatarUrl
+      });
+  
+      if (!success) throw new Error(registerError);
       navigate('/tukangs');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to register');
@@ -126,3 +111,7 @@ const Register = () => {
 };
 
 export default Register;
+function registerTukang(arg0: { avatar_url: string | null; fullName: string; whatsapp: string; location: string; skills: string; minPrice: string; maxPrice: string; about: string; }): { success: any; error: any; } | PromiseLike<{ success: any; error: any; }> {
+  throw new Error('Function not implemented.');
+}
+
