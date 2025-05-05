@@ -15,7 +15,6 @@ const TukangList: React.FC = () => {
               <h3>{tukang.name}</h3>
               <p className="specialty">{tukang.specialty}</p>
               <p className="location">{tukang.location}</p>
-              <p className="rating">Rating: {tukang.rating} ⭐</p>
               <p className="experience">Pengalaman: {tukang.experience} tahun</p>
               <p className="rate">Rp {tukang.hourlyRate}/jam</p>
               <p className={`availability ${tukang.available ? 'available' : 'unavailable'}`}>

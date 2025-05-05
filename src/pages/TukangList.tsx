@@ -253,13 +253,16 @@ const TukangList = () => {
                     <span>{tukang.rating?.toFixed(1) || "4.0"}</span>
                   </div>
                 </div>
-                <p className="text-gray-600">{tukang.skills}</p>
-                <div className="flex items-center text-gray-500 mt-1">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  <span className="text-sm">{tukang.location}</span>
-                </div>
-                <div className="mt-2 text-primary-600 font-medium">
-                  Rp {tukang.minPrice.toLocaleString()} - {tukang.maxPrice.toLocaleString()}
+                <div className="flex flex-col">
+                  <h3 className="font-semibold text-lg">{tukang.fullName}</h3>
+                  <p className="text-gray-600">{tukang.skills}</p>
+                  <div className="flex items-center mt-1">
+                    <MapPin className="w-4 h-4 text-gray-500 mr-1" />
+                    <span className="text-gray-500 text-sm">{tukang.location}</span>
+                  </div>
+                  <p className="text-primary-600 font-medium mt-2">
+                    Rp {tukang.minPrice.toLocaleString()} - {tukang.maxPrice.toLocaleString()}
+                  </p>
                 </div>
               </div>
             </Link>

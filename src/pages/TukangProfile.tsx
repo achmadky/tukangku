@@ -71,11 +71,6 @@ const TukangProfile = () => {
                 <h1 className="text-2xl font-bold">{tukang.fullName}</h1>
                 <p className="text-gray-600">{tukang.skills}</p>
               </div>
-              <div className="flex items-center space-x-1">
-                <span className="text-lg font-semibold">{tukang.rating?.toFixed(1) || "4.0"}</span>
-                <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                <span className="text-gray-600">({tukang.jobsCompleted || 0} reviews)</span>
-              </div>
             </div>
             <div className="mt-4 flex items-center text-gray-600">
               <MapPin className="w-5 h-5 mr-2" />
