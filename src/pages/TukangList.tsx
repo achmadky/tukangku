@@ -1,244 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, Filter, Star } from 'lucide-react';
-import tukangData from '../data/tukangData';
-
-const SKILL_OPTIONS = [
-  'Listrik',
-  'Pipa Air',
-  'Kayu',
-  'Cat',
-  'Bangunan',
-  'AC',
-  'Elektronik',
-  'Taman',
-];
-
-// Convert mock data to match the expected Tukang interface
-const convertMockData = () => {
-  return tukangData.map(tukang => ({
-    id: String(tukang.id),
-    profile_id: String(tukang.id),
-    skills: [tukang.specialty],
-    location: tukang.location,
-    min_price: tukang.hourlyRate * 0.8,
-    max_price: tukang.hourlyRate * 1.2,
-    whatsapp: tukang.phone,
-    about: null,
-    rating: tukang.rating,
-    jobs_completed: tukang.experience * 10,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    profile: {
-      id: String(tukang.id),
-      email: `${tukang.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-      full_name: tukang.name,
-      avatar_url: tukang.photo, // Use the direct URL from the mock data
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  }));
-};
+import { getAllTukangs, TukangData } from '../services/tukangService';
 
 const TukangList = () => {
-  const [location, setLocation] = useState('');
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [priceRange, setPriceRange] = useState<{ min?: number; max?: number }>({});
-  const [tukangs, setTukangs] = useState<any[]>([]);
+  const [tukangs, setTukangs] = useState<TukangData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate loading
-    setLoading(true);
-    
-    setTimeout(() => {
+    const fetchTukangs = async () => {
       try {
-        // Get mock data
-        let filteredTukangs = convertMockData();
-        
-        // Apply filters
-        if (location) {
-          filteredTukangs = filteredTukangs.filter(tukang => 
-            tukang.location.toLowerCase().includes(location.toLowerCase())
-          );
-        }
-        
-        if (selectedSkills.length > 0) {
-          filteredTukangs = filteredTukangs.filter(tukang => 
-            selectedSkills.some(skill => 
-              tukang.skills.some((tukangSkill: string) => 
-                tukangSkill.toLowerCase().includes(skill.toLowerCase())
-              )
-            )
-          );
-        }
-        
-        if (priceRange.min) {
-          filteredTukangs = filteredTukangs.filter(tukang => 
-            tukang.min_price >= (priceRange.min ?? 0)
-          );
-        }
-        
-        if (priceRange.max) {
-          filteredTukangs = filteredTukangs.filter(tukang => 
-            tukang.max_price <= (priceRange.max ?? Infinity)
-          );
-        }
-        
-        setTukangs(filteredTukangs);
+        setLoading(true);
+        const data = await getAllTukangs();
+        setTukangs(data);
         setLoading(false);
       } catch (err) {
-        setError('An error occurred while fetching data');
+        console.error('Error fetching tukangs:', err);
+        setError('Failed to load tukangs. Please try again later.');
         setLoading(false);
       }
-    }, 500); // Simulate network delay
-  }, [location, selectedSkills, priceRange.min, priceRange.max]);
+    };
 
-  const toggleSkill = (skill: string) => {
-    setSelectedSkills(prev =>
-      prev.includes(skill)
-        ? prev.filter(s => s !== skill)
-        : [...prev, skill]
+    fetchTukangs();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="text-center py-16">
+        <div className="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading tukangs...</p>
+      </div>
     );
-  };
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
+  if (tukangs.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-xl text-gray-600">No tukangs found</p>
+        <Link to="/register" className="mt-4 inline-block px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors">
+          Register as Tukang
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Search and Filter Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Cari berdasarkan lokasi..."
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Available Tukangs</h1>
+      
+      <div className="grid gap-4">
+        {tukangs.map((tukang) => (
+          <Link 
+            key={tukang.id} 
+            to={`/tukang/${tukang.id}`}
+            className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow flex gap-4"
           >
-            <Filter className="w-5 h-5" />
-            <span>Filter</span>
-          </button>
-        </div>
-
-        {showFilters && (
-          <div className="p-4 bg-gray-50 rounded-lg space-y-4">
-            <div>
-              <h3 className="font-medium mb-2">Keahlian</h3>
-              <div className="flex flex-wrap gap-2">
-                {SKILL_OPTIONS.map((skill) => (
-                  <button
-                    key={skill}
-                    onClick={() => toggleSkill(skill)}
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      selectedSkills.includes(skill)
-                        ? 'bg-primary-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    {skill}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="font-medium mb-2">Kisaran Harga (Rp)</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="number"
-                  placeholder="Minimum"
-                  value={priceRange.min || ''}
-                  onChange={(e) => setPriceRange(prev => ({
-                    ...prev,
-                    min: e.target.value ? parseInt(e.target.value) : undefined
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                <input
-                  type="number"
-                  placeholder="Maksimum"
-                  value={priceRange.max || ''}
-                  onChange={(e) => setPriceRange(prev => ({
-                    ...prev,
-                    max: e.target.value ? parseInt(e.target.value) : undefined
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Loading and Error States */}
-      {loading && (
-        <div className="text-center py-8">
-          <div className="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-2 text-gray-600">Mencari tukang...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="text-center py-8 text-red-600">
-          <p>{error}</p>
-        </div>
-      )}
-
-      {/* Tukang List */}
-      {!loading && !error && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tukangs.map((tukang) => (
-            <div key={tukang.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <img
-                src={tukang.profile.avatar_url || `https://source.unsplash.com/random/400x300?worker&sig=${tukang.id}`}
-                alt={tukang.profile.full_name || 'Tukang'}
-                className="w-full h-48 object-cover"
+            <div className="w-20 h-20 flex-shrink-0">
+              <img 
+                src={tukang.photo || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"} 
+                alt={tukang.fullName} 
+                className="w-full h-full object-cover rounded-full"
               />
-              <div className="p-4 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-lg">{tukang.profile.full_name}</h3>
-                    <p className="text-gray-600 text-sm">{tukang.skills.join(', ')}</p>
-                  </div>
-                  <div className="flex items-center space-x-1 text-yellow-500">
-                    <span>{tukang.rating.toFixed(1)}</span>
-                    <Star className="w-5 h-5 fill-current" />
-                  </div>
+            </div>
+            <div className="flex-grow">
+              <div className="flex justify-between">
+                <h2 className="text-lg font-semibold">{tukang.fullName}</h2>
+                <div className="flex items-center">
+                  <Star className="w-4 h-4 fill-yellow-500 text-yellow-500 mr-1" />
+                  <span>{tukang.rating?.toFixed(1) || "4.0"}</span>
                 </div>
-                <div className="flex items-center text-gray-600 text-sm">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  <span>{tukang.location}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">{tukang.jobs_completed}+ pekerjaan selesai</span>
-                  <span className="font-semibold">
-                    Rp {tukang.min_price.toLocaleString()} - {tukang.max_price.toLocaleString()}
-                  </span>
-                </div>
-                <Link
-                  to={`/tukang/${tukang.id}`}
-                  className="block w-full py-2 text-center bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                >
-                  Lihat Profil
-                </Link>
+              </div>
+              <p className="text-gray-600">{tukang.skills}</p>
+              <div className="flex items-center text-gray-500 mt-1">
+                <MapPin className="w-4 h-4 mr-1" />
+                <span className="text-sm">{tukang.location}</span>
+              </div>
+              <div className="mt-2 text-primary-600 font-medium">
+                Rp {tukang.minPrice.toLocaleString()} - {tukang.maxPrice.toLocaleString()}
               </div>
             </div>
-          ))}
-
-          {tukangs.length === 0 && (
-            <div className="col-span-full text-center py-8 text-gray-600">
-              <p>Tidak ada tukang yang sesuai dengan kriteria pencarian.</p>
-            </div>
-          )}
-        </div>
-      )}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };
